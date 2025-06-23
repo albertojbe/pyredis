@@ -1,7 +1,6 @@
 import socket
 import resp_codec
 
-
 def main():
     storage = {}
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
@@ -14,6 +13,14 @@ def main():
         match command:
             case "ping":
                 connection.sendall(resp_codec.encode(["PONG"]).encode())
+            case "set":
+
+                key = arguments[1]
+                value = arguments[2]
+                if key in storage.keys():
+                    return connection.sendall(resp_codec.encode("").encode())
+                storage[key] = [value]
+                connection.sendall(resp_codec.encode("OK").encode())
             case _:
                 connection.sendall(resp_codec.encode(f"ERR unknown command {command}").encode())
 
