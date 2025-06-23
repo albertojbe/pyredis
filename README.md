@@ -1,2 +1,2 @@
-# redis-java
-A clone of redis implemented on java
+# pyredis
+A clone of redis implemented on python
