@@ -3,6 +3,9 @@ CRLF = "\r\n"
 class RespError(Exception):
     pass
 
+class IncompleteFrame(Exception):
+    pass
+
 class _Reader:
     def __init__(self, message: str):
         self.message = message
@@ -11,14 +14,14 @@ class _Reader:
     def read_line(self) -> str:
         end_of_line = self.message.find(CRLF, self.index)
         if end_of_line == -1:
-            raise ValueError("RESP incompleto (CRLF faltando)")
+            raise IncompleteFrame()
         line = self.message[self.index:end_of_line]
         self.index = end_of_line + 2
         return line
 
     def read(self, position: int) -> str:
         if self.index + position > len(self.message):
-            raise ValueError("Incomplete Message")
+            raise IncompleteFrame()
         text, self.index = self.message[self.index:self.index + position], self.index + position
         return text
     def __str__(self):
@@ -73,9 +76,15 @@ def encode(message: str or list, error=False) -> str:
         return text
     return None
 
+def decode_frame(buf: bytes):
+    buf = buf.decode()
+    reader = _Reader(buf)
+    obj = decode(reader)
+    return obj, reader.index
 
 def main():
     print(decode("*1\r\n$4\r\nPING\r\n"))
+    print(encode([]).encode())
 
 
 if __name__ == "__main__":
