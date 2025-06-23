@@ -1,6 +1,7 @@
 import random
 import socket
 import threading
+import time
 
 import resp_codec
 storage = {}
@@ -10,28 +11,65 @@ def process(args):
     match command:
         case "ping":
             return resp_codec.encode("PONG").encode()
+
         case "echo":
             if len(args) < 2:
                 return resp_codec.encode(" ").encode()
             return resp_codec.encode(args[1]).encode()
+
         case "set":
             key = args[1]
             if key =="key:__rand_int__":
-                key = random.randint(1, 20)
+                key = f"key:{random.randint(1, 10000)}"
             value = args[2]
             if key in storage.keys():
                 return resp_codec.encode("").encode()
 
-            storage[key] = [value]
+            storage[key] = {'value': [value], 'exp_at': None}
+
+            if len(args) == 5:
+                expiry_type = args[3].upper()
+                expiry_time = args[4]
+                match expiry_type:
+                    case "EX":
+                        storage[key]['exp_at'] = int(time.time() + int(expiry_time))
+                    case "PX":
+                        storage[key]['exp_at'] = int((time.time()) + (expiry_time / 1000))
+                    case "EXAT":
+                        storage[key]['exp_at'] = int(expiry_time)
+                    case "PXAT":
+                        storage[key]['exp_at'] = int(expiry_time / 1000)
             return resp_codec.encode("OK").encode()
+
         case "get":
             key = args[1]
             if not key in storage.keys():
                 return resp_codec.encode("").encode()
             if key =="key:__rand_int__":
-                key = random.randint(1, 20)
-            value = storage.get(key)
+                key = f"key:{random.randint(1, 10000)}"
+            expiry_date = storage[key]['exp_at']
+            current_date = time.time()
+            if expiry_date:
+                if expiry_date < current_date:
+                    del storage[key]
+                    return resp_codec.encode("expired value").encode()
+
+            value = storage[key]['value']
             return resp_codec.encode(value).encode()
+
+        case "exists":
+            if args[1] in storage.keys():
+                return resp_codec.encode(1).encode()
+            return resp_codec.encode(0).encode()
+
+        case "del":
+            count = 0
+            for key in args[1:]:
+                if key in storage.keys():
+                    del storage[key]
+                    count += 1
+            return resp_codec.encode(count).encode()
+
         case "config":
             return resp_codec.encode([]).encode()
         case _:

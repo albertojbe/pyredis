@@ -81,11 +81,3 @@ def decode_frame(buf: bytes):
     reader = _Reader(buf)
     obj = decode(reader)
     return obj, reader.index
-
-def main():
-    print(decode("*1\r\n$4\r\nPING\r\n"))
-    print(encode([]).encode())
-
-
-if __name__ == "__main__":
-    main()
