@@ -14,6 +14,11 @@ def main():
         match command:
             case "ping":
                 connection.sendall(resp_codec.encode(["PONG"]).encode())
+            case "echo":
+                if len(arguments) < 2:
+                    connection.sendall(resp_codec.encode(" ").encode())
+                    continue
+                connection.sendall(resp_codec.encode(arguments[1]).encode())
             case "set":
                 key = arguments[1]
                 value = arguments[2]
@@ -30,6 +35,6 @@ def main():
                 value = storage.get(arguments[1])
                 connection.sendall(resp_codec.encode(value).encode())
             case _:
-                connection.sendall(resp_codec.encode(f"ERR unknown command {command}").encode())
+                connection.sendall(resp_codec.encode(f'unknown command "{command}"', True).encode())
 if __name__ == "__main__":
     main()
