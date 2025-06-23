@@ -1,16 +1,21 @@
+import json
 import random
 import socket
 import threading
 import time
-
 import resp_codec
+
 storage = {}
+
+def save_storage(db):
+    with open("db.json", "w", encoding="utf-8") as f:
+        json.dump(db, f, ensure_ascii=False, indent=4)
 
 def string_is_number(value: str):
     try:
         value = float(value)
         return True
-    except ValueError:
+    except TypeError:
         return False
 
 def process(args):
@@ -86,8 +91,7 @@ def process(args):
                     value = float(value) + 1
                     storage[key]['value'] = str(value)
                     return resp_codec.encode(int(value)).encode()
-                storage[key]['value'] = str(1)
-                return resp_codec.encode(1).encode()
+                return resp_codec.encode("ERR value is not an integer or out of range", True).encode()
             storage[key]= {'value':str(1), 'exp_at':None}
             return resp_codec.encode(1).encode()
 
@@ -99,18 +103,18 @@ def process(args):
                     value = float(value) - 1
                     storage[key]['value'] = str(value)
                     return resp_codec.encode(int(value)).encode()
-                storage[key]['value'] = str(1)
-                return resp_codec.encode(1).encode()
+                return resp_codec.encode("ERR value is not an integer or out of range", True).encode()
             storage[key]['value'] = str(1)
             return resp_codec.encode(1).encode()
 
-
-
+        case "save":
+            save_storage(storage)
+            return resp_codec.encode(1).encode()
         case "config":
             return resp_codec.encode([]).encode()
-        case _:
 
-            return resp_codec.encode(f'unknown command "{command}"', True).encode()
+        case _:
+            return resp_codec.encode(f'ERR unknown command "{command}"', True).encode()
 
 def handle_client(connection: socket, address):
     buffer = b""
@@ -138,6 +142,11 @@ def handle_client(connection: socket, address):
         connection.close()
 
 def main():
+    global storage
+    with open("db.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+    storage = db
+
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
     while True:
         connection, address = server_socket.accept()
