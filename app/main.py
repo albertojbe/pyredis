@@ -6,6 +6,13 @@ import time
 import resp_codec
 storage = {}
 
+def string_is_number(value: str):
+    try:
+        value = float(value)
+        return True
+    except ValueError:
+        return False
+
 def process(args):
     command = args[0].lower()
     match command:
@@ -70,9 +77,39 @@ def process(args):
                     count += 1
             return resp_codec.encode(count).encode()
 
+        case "incr":
+            print(storage)
+            key = args[1]
+            if key in storage.keys():
+                value = storage[key]['value']
+                if string_is_number(value):
+                    value = float(value) + 1
+                    storage[key]['value'] = str(value)
+                    return resp_codec.encode(int(value)).encode()
+                storage[key]['value'] = str(1)
+                return resp_codec.encode(1).encode()
+            storage[key]= {'value':str(1), 'exp_at':None}
+            return resp_codec.encode(1).encode()
+
+        case "decr":
+            key = args[1]
+            if key in storage.keys():
+                value = storage[key]['value']
+                if string_is_number(value):
+                    value = float(value) - 1
+                    storage[key]['value'] = str(value)
+                    return resp_codec.encode(int(value)).encode()
+                storage[key]['value'] = str(1)
+                return resp_codec.encode(1).encode()
+            storage[key]['value'] = str(1)
+            return resp_codec.encode(1).encode()
+
+
+
         case "config":
             return resp_codec.encode([]).encode()
         case _:
+
             return resp_codec.encode(f'unknown command "{command}"', True).encode()
 
 def handle_client(connection: socket, address):
