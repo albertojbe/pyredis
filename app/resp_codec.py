@@ -49,11 +49,14 @@ def decode(message: str or _Reader):
             for x in range(array_length):
                 arguments.append(decode(message))
             return arguments
-    return None
+        case _:
+            return ""
 
 def encode(message: str or list, error=False) -> str:
     if error:
         return f"-{message}\r\n"
+    elif message == "":
+        return f"$-1\r\n"
     elif isinstance(message, str):
         return f"+{message}\r\n"
     elif isinstance(message, int):
